@@ -12,7 +12,7 @@ int bernoulli(double p) {
     }
 
     // Generate a random number in the range [0, 1]
-    double random_value = (double)rand() / RAND_MAX;
+    double random_value = (double) rand() / RAND_MAX;
 
     // Return 1 with probability p, 0 otherwise
     return random_value < p ? 1 : 0;

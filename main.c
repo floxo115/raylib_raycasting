@@ -1,13 +1,16 @@
+#include <stdio.h>
+
 #include "raylib.h"
 #include <stdlib.h>
 
 #include "raymath.h"
 #include "bernoulli.h"
+#include "utils.h"
 
 const int32_t SCREEN_WIDTH = 1200;
 const int32_t SCREEN_HEIGHT = 1200;
-const int32_t PLAYER_WIDTH = 30;
-const int32_t PLAYER_HEIGHT = 30;
+const int32_t PLAYER_WIDTH = 15;
+const int32_t PLAYER_HEIGHT = 15;
 
 const int32_t N_GRIDS = 40;
 
@@ -30,7 +33,7 @@ void actions(Player *player) {
         player->x += cos(player->angle) * SPEED;
     } else if (IsKeyDown(KEY_DOWN)) {
         player->y += sin(player->angle) * SPEED;
-        player->x = cos(player->angle) * SPEED;
+        player->x -= cos(player->angle) * SPEED;
     }
 }
 
@@ -51,11 +54,11 @@ void drawGrids(int height, int width, bool world[height][width]) {
 }
 
 void drawPlayer(const Player *const player) {
-    DrawRectangle((int) player->x, (int) player->y, PLAYER_WIDTH, PLAYER_HEIGHT, RED);
+    DrawCircle((int) player->x, (int) player->y, (float) PLAYER_HEIGHT, RED);
 
     Vector2 sp = {
-        (float) (player->x + PLAYER_WIDTH / 2.),
-        (float) (player->y + PLAYER_HEIGHT / 2.),
+        (float) (player->x),
+        (float) (player->y),
     };
     const int32_t len_of_angle_pointer = 40;
     Vector2 ep = {(float) len_of_angle_pointer, 0};
@@ -65,6 +68,15 @@ void drawPlayer(const Player *const player) {
     DrawLineEx(sp, ep, 5, YELLOW);
 }
 
+void drawRay(MyRay ray) {
+    Vector2 start_ray = {(float) ray.pos_x, (float) ray.pos_y};
+    Vector2 end_ray = {1, 0};
+    end_ray = Vector2Scale(end_ray, (float) ray.distance);
+    end_ray = Vector2Rotate(end_ray, (float) -(ray.angle));
+    end_ray = Vector2Add(start_ray, end_ray);
+    DrawLineEx(start_ray, end_ray, 3, GREEN);
+}
+
 
 int main(void) {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "raylib [core] example - basic window");
@@ -72,7 +84,7 @@ int main(void) {
     bool world[N_GRIDS][N_GRIDS];
     for (int c = 0; c < N_GRIDS; c++) {
         for (int r = 0; r < N_GRIDS; r++) {
-            if (bernoulli(0.15) == 1) {
+            if (bernoulli(0.08) == 1) {
                 world[c][r] = true;
             } else {
                 world[c][r] = false;
@@ -86,7 +98,7 @@ int main(void) {
         world[i][N_GRIDS - 1] = true;
     }
 
-    SetTargetFPS(60);
+    SetTargetFPS(30);
 
     Player player = {
         .x = (SCREEN_WIDTH / 2. - PLAYER_WIDTH / 2.),
@@ -97,13 +109,24 @@ int main(void) {
     while (!WindowShouldClose()) {
         BeginDrawing();
         ClearBackground(BLACK);
-        DrawFPS(10, 10);
 
         actions(&player);
 
         drawGrids(N_GRIDS, N_GRIDS, world);
+
+        for (size_t i = 0; i < 60; i++) {
+            double angle_offset = (PI * 0.95) / 120;
+            MyRay ray = cast_ray(SCREEN_WIDTH, SCREEN_HEIGHT, player.y, player.x, player.angle,
+                                 angle_offset * (double) i, N_GRIDS, world);
+            drawRay(ray);
+            ray = cast_ray(SCREEN_WIDTH, SCREEN_HEIGHT, player.y, player.x, player.angle, -(angle_offset * (double) i),
+                           N_GRIDS, world);
+            drawRay(ray);
+        }
+
         drawPlayer(&player);
 
+        DrawFPS(10, 10);
         EndDrawing();
     }
 
